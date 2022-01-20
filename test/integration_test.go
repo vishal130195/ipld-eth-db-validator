@@ -2,57 +2,69 @@ package integration_test
 
 import (
 	"context"
-	"os"
-	"strconv"
 	"time"
 
+	"github.com/Vulcanize/ipld-eth-db-validator/pkg/validator"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/statediff/indexer/node"
 	"github.com/ethereum/go-ethereum/statediff/indexer/postgres"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/Vulcanize/ipld-eth-db-validator/pkg/validator"
-
 	integration "github.com/vulcanize/ipld-eth-server/test"
 )
 
-const trail = 0
+const trail = 2
+const head = 1
 
 var randomAddr = common.HexToAddress("0x1C3ab14BBaD3D99F4203bd7a11aCB94882050E6f")
 
 var _ = Describe("Integration test", func() {
-	directProxyEthCalls, err := strconv.ParseBool(os.Getenv("ETH_FORWARD_ETH_CALLS"))
-	Expect(err).To(BeNil())
-
-	Expect(err).ToNot(HaveOccurred())
 	ctx := context.Background()
 
 	var contract *integration.ContractDeployed
 	var contractErr error
-	sleepInterval := 5 * time.Second
+	sleepInterval := 2 * time.Second
 
-	Describe("Validate state", func() {
-		BeforeEach(func() {
-			if directProxyEthCalls {
-				Skip("skipping no-direct-proxy-forwarding integration tests")
-			}
-			contract, contractErr = integration.DeployContract()
-			time.Sleep(sleepInterval)
-		})
+	Describe("Validate all blocks", func() {
+		address := "0x1111111111111111111111111111111111111112"
 
-		It("Validate state root", func() {
-			Expect(contractErr).ToNot(HaveOccurred())
+		err := sendEthTransactions(address, sleepInterval, 5)
+		Expect(err).ToNot(HaveOccurred())
 
-			db, _ := setupDB()
-			srvc := validator.NewService(db, uint64(contract.BlockNumber), trail, validator.IntegrationTestChainConfig)
-			_, err = srvc.Start(ctx)
-			Expect(err).ToNot(HaveOccurred())
+		contract, contractErr = integration.DeployContract()
+		Expect(contractErr).ToNot(HaveOccurred())
+		time.Sleep(sleepInterval)
 
-		})
+		err = sendEthTransactions(address, sleepInterval, 5)
+		Expect(err).ToNot(HaveOccurred())
+
+		_, err = integration.DestroyContract(contract.Address)
+		Expect(err).ToNot(HaveOccurred())
+
+		time.Sleep(sleepInterval)
+
+		err = sendEthTransactions(address, sleepInterval, 5)
+		Expect(err).ToNot(HaveOccurred())
+
+		// Run validator
+		db, _ := setupDB()
+		srvc := validator.NewService(db, head, trail, validator.IntegrationTestChainConfig)
+		_, err = srvc.Start(ctx)
+		Expect(err).ToNot(HaveOccurred())
+
 	})
 })
 
+func sendEthTransactions(address string, sleepInterval time.Duration, n int) error {
+	for i := 0; i < n; i++ {
+		if _, err := integration.SendEth(address, "0.01"); err != nil {
+			return err
+		}
+		time.Sleep(sleepInterval)
+	}
+	return nil
+}
 func setupDB() (*postgres.DB, error) {
 	uri := postgres.DbConnectionString(postgres.ConnectionParams{
 		User:     "vdbm",
