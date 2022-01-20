@@ -4,20 +4,21 @@ import (
 	"context"
 	"time"
 
-	"github.com/Vulcanize/ipld-eth-db-validator/pkg/validator"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/statediff/indexer/node"
 	"github.com/ethereum/go-ethereum/statediff/indexer/postgres"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/Vulcanize/ipld-eth-db-validator/pkg/validator"
+
 	integration "github.com/vulcanize/ipld-eth-server/test"
 )
 
-const trail = 2
-const head = 1
-
-var randomAddr = common.HexToAddress("0x1C3ab14BBaD3D99F4203bd7a11aCB94882050E6f")
+const (
+	trail        = 2
+	head         = 1
+	sendEthCount = 5
+)
 
 var _ = Describe("Integration test", func() {
 	ctx := context.Background()
@@ -29,14 +30,14 @@ var _ = Describe("Integration test", func() {
 	Describe("Validate all blocks", func() {
 		address := "0x1111111111111111111111111111111111111112"
 
-		err := sendEthTransactions(address, sleepInterval, 5)
+		err := sendMultipleEth(address, sleepInterval, sendEthCount)
 		Expect(err).ToNot(HaveOccurred())
 
 		contract, contractErr = integration.DeployContract()
 		Expect(contractErr).ToNot(HaveOccurred())
 		time.Sleep(sleepInterval)
 
-		err = sendEthTransactions(address, sleepInterval, 5)
+		err = sendMultipleEth(address, sleepInterval, sendEthCount)
 		Expect(err).ToNot(HaveOccurred())
 
 		_, err = integration.DestroyContract(contract.Address)
@@ -44,7 +45,7 @@ var _ = Describe("Integration test", func() {
 
 		time.Sleep(sleepInterval)
 
-		err = sendEthTransactions(address, sleepInterval, 5)
+		err = sendMultipleEth(address, sleepInterval, sendEthCount)
 		Expect(err).ToNot(HaveOccurred())
 
 		// Run validator
@@ -56,13 +57,14 @@ var _ = Describe("Integration test", func() {
 	})
 })
 
-func sendEthTransactions(address string, sleepInterval time.Duration, n int) error {
+func sendMultipleEth(address string, sleepInterval time.Duration, n int) error {
 	for i := 0; i < n; i++ {
 		if _, err := integration.SendEth(address, "0.01"); err != nil {
 			return err
 		}
 		time.Sleep(sleepInterval)
 	}
+
 	return nil
 }
 func setupDB() (*postgres.DB, error) {
