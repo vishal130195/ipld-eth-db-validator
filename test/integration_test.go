@@ -17,6 +17,7 @@ import (
 const (
 	trail        = 2
 	head         = 1
+	toBlock      = 0
 	sendEthCount = 5
 )
 
@@ -50,7 +51,7 @@ var _ = Describe("Integration test", func() {
 
 		// Run validator
 		db, _ := setupDB()
-		srvc := validator.NewService(db, head, trail, validator.IntegrationTestChainConfig)
+		srvc := validator.NewService(db, head, trail, toBlock, validator.IntegrationTestChainConfig)
 		_, err = srvc.Start(ctx)
 		Expect(err).ToNot(HaveOccurred())
 

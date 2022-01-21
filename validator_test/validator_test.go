@@ -26,6 +26,7 @@ const (
 	chainLength = 20
 	blockHeight = 1
 	trail       = 2
+	toBlock     = 0
 )
 
 // SetupDB is use to setup a db for watcher tests
@@ -134,7 +135,7 @@ var _ = Describe("eth state reading tests", func() {
 
 	Describe("state_validation", func() {
 		It("Validator", func() {
-			srvc := validator.NewService(db, blockHeight, trail, validator.TestChainConfig)
+			srvc := validator.NewService(db, blockHeight, trail, toBlock, validator.TestChainConfig)
 
 			_, err := srvc.Start(context.Background())
 			Expect(err).ToNot(HaveOccurred())

@@ -32,17 +32,18 @@ var (
 )
 
 type service struct {
-	db              *postgres.DB
-	blockNum, trail uint64
-	logger          *log.Logger
-	chainCfg        *params.ChainConfig
+	db                       *postgres.DB
+	blockNum, trail, toblock uint64
+	logger                   *log.Logger
+	chainCfg                 *params.ChainConfig
 }
 
-func NewService(db *postgres.DB, blockNum, trailNum uint64, chainCfg *params.ChainConfig) *service {
+func NewService(db *postgres.DB, blockNum, trailNum, toBlockNum uint64, chainCfg *params.ChainConfig) *service {
 	return &service{
 		db:       db,
 		blockNum: blockNum,
 		trail:    trailNum,
+		toblock:  toBlockNum,
 		logger:   log.New(),
 		chainCfg: chainCfg,
 	}
@@ -103,10 +104,20 @@ func (s *service) Start(ctx context.Context) (uint64, error) {
 	}
 
 	idxBlockNum := s.blockNum
-	headBlock, _ := api.B.BlockByNumber(ctx, rpc.LatestBlockNumber)
-	headBlockNum := headBlock.NumberU64()
+	var headBlock *types.Block
+	var headBlockNum uint64
 
-	for headBlockNum-s.trail >= idxBlockNum {
+	toBlock := s.toblock
+	isToBlock := false
+
+	if toBlock > 0 && toBlock > idxBlockNum {
+		isToBlock = true
+	} else {
+		headBlock, _ = api.B.BlockByNumber(ctx, rpc.LatestBlockNumber)
+		headBlockNum = headBlock.NumberU64()
+	}
+
+	for {
 		validateBlock, err := api.B.BlockByNumber(ctx, rpc.BlockNumber(idxBlockNum))
 		if err != nil {
 			return idxBlockNum, err
@@ -127,13 +138,23 @@ func (s *service) Start(ctx context.Context) (uint64, error) {
 
 		s.logger.Infof("state root verified for block= %d", idxBlockNum)
 
-		headBlock, err = api.B.BlockByNumber(ctx, rpc.LatestBlockNumber)
-		if err != nil {
-			return idxBlockNum, err
-		}
-
-		headBlockNum = headBlock.NumberU64()
 		idxBlockNum++
+
+		if isToBlock {
+			if toBlock < idxBlockNum {
+				break
+			}
+		} else {
+			headBlock, err = api.B.BlockByNumber(ctx, rpc.LatestBlockNumber)
+			if err != nil {
+				return idxBlockNum, err
+			}
+
+			headBlockNum = headBlock.NumberU64()
+			if headBlockNum-s.trail < idxBlockNum {
+				break
+			}
+		}
 	}
 
 	s.logger.Infof("last validated block %v", idxBlockNum-1)

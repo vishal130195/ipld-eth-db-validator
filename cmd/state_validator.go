@@ -39,11 +39,12 @@ func stateValidator() {
 	}
 
 	trail := viper.GetUint64("validate.trail")
+	toblock := viper.GetUint64("validate.to-block")
 	var chaincfg *params.ChainConfig = nil
 	if viper.GetBool("chain.set") {
 		chaincfg = setChainConfig()
 	}
-	srvc := validator.NewService(cfg.DB, height, trail, chaincfg)
+	srvc := validator.NewService(cfg.DB, height, trail, toblock, chaincfg)
 
 	_, err = srvc.Start(context.Background())
 	if err != nil {
@@ -58,9 +59,11 @@ func init() {
 
 	stateValidatorCmd.PersistentFlags().String("block-height", "1", "block height to initiate state validation")
 	stateValidatorCmd.PersistentFlags().String("trail", "0", "trail of block height to validate")
+	stateValidatorCmd.PersistentFlags().String("to-block", "0", "validate till block number")
 
 	_ = viper.BindPFlag("validate.block-height", stateValidatorCmd.PersistentFlags().Lookup("block-height"))
 	_ = viper.BindPFlag("validate.trail", stateValidatorCmd.PersistentFlags().Lookup("trail"))
+	_ = viper.BindPFlag("validate.to-block", stateValidatorCmd.PersistentFlags().Lookup("to-block"))
 }
 
 func initConfig() {
