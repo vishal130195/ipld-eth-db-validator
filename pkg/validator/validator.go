@@ -141,7 +141,6 @@ func (s *service) Start(ctx context.Context) (uint64, error) {
 }
 
 func ethAPI(ctx context.Context, db *postgres.DB, chainCfg *params.ChainConfig) (*ipldEth.PublicEthAPI, error) {
-	// TODO: decide network for custom chainConfig.
 	backend, err := NewEthBackend(db, &ipldEth.Config{
 		ChainConfig: chainCfg,
 		GroupCacheConfig: &ethServerShared.GroupCacheConfig{
@@ -273,7 +272,6 @@ func getAuthor(b *ipldEth.Backend, header *types.Header) *common.Address {
 }
 
 func getEngine(b *ipldEth.Backend) consensus.Engine {
-	// TODO: add logic for other engines
 	if b.Config.ChainConfig.Clique != nil {
 		engine := clique.New(b.Config.ChainConfig.Clique, nil)
 		return engine

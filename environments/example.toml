@@ -7,4 +7,27 @@
 
 [validate]
     block-height = 1
-    trail  = 10
+    trail        = 10
+
+[chain]
+    set = true
+    chainid = 1
+    homestead-block = 100
+    fork-block  = 0
+    fork-support = false
+    eip150-block = 0
+    eip150-hash = "0x00"
+    eip155-block = 0
+    eip158-block = 0
+    byzantium-block = 0
+    constantinople-block = 0
+    petersburg-block = 0
+    istanbul-block = 0
+    muirGlacier-block = 0
+    berlin-block = 0
+    london-block = 0
+    arrowGlacier-block = 0
+    mergeFork-block = 0
+    ethash = true
+    clique-period = 15000
+    clique-epoch = 12
